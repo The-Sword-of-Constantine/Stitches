@@ -9,6 +9,7 @@ EN | [中文](./Readme.md)
   * Thread Notify Callback（Check Remote Thread）
   * Image Notify Callback（Inject Hook Dll With Apc Inject）
   * Object Notify Callback (Process Protector & Block read lsass）
+  * Reg Notify Callback(Reg protector & autorun monitor)
 * MiniFilter
   * File Protector
   * USB device control（Wating...）
