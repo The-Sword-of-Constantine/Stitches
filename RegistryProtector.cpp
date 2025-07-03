@@ -6,6 +6,86 @@
 
 extern LazyInstance<GlobalData> g_pGlobalData;
 
+
+
+static 
+UNICODE_STRING 
+g_AutoRunKeys[] = {
+		 RTL_CONSTANT_STRING(
+			L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUN\\*"),
+		 RTL_CONSTANT_STRING(
+			L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUN")
+};
+
+constexpr ULONG AUTORUN_COUNT = sizeof(g_AutoRunKeys) / sizeof(g_AutoRunKeys[0]);
+
+static
+BOOLEAN
+IsInAutoRunKeys(PUNICODE_STRING RegPath)
+{
+	for (auto i = 0; i != AUTORUN_COUNT; ++i)
+	{
+		if (FsRtlIsNameInExpression(&g_AutoRunKeys[i], RegPath, TRUE, NULL))
+		{
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+static
+BOOLEAN
+MonitorAutorunOperation(
+	IN CONST HANDLE Pid,
+	IN CONST PVOID RegObject)
+{
+	BOOLEAN bIsAllowRun{ FALSE };
+	BOOLEAN bResult{ FALSE };
+
+	BOOLEAN bTrustProcess{ FALSE };
+	WCHAR wszRegistryPath[MAX_REGISTRYPATH]{ 0 };
+	bResult = KGetRegistryPath(RegObject, wszRegistryPath, MAX_REGISTRYPATH * sizeof(WCHAR));
+	if (!bResult)
+	{
+		bIsAllowRun = FALSE;
+		return bIsAllowRun;
+	}
+	UNICODE_STRING ustrRgPath{};
+	RtlInitUnicodeString(&ustrRgPath, wszRegistryPath);
+
+	/*auto InAutoRunKeys = [](PUNICODE_STRING RegPath) {
+		for (auto i = 0; i != AUTORUN_COUNT; ++i)
+		{
+			if (FsRtlIsNameInExpression(&g_AutoRunKeys[i], RegPath, TRUE, NULL))
+			{
+				return TRUE;
+			}
+		}
+
+		return FALSE;
+	};*/
+
+	bResult = IsInAutoRunKeys(&ustrRgPath);
+
+	// trust process
+	WCHAR wszProcessPath[MAX_PATH]{ 0 };
+	auto status = GetProcessImageByPid(Pid, wszProcessPath);
+	if (!NT_SUCCESS(status) && !bResult)
+	{
+		bIsAllowRun = TRUE;
+		return bIsAllowRun;
+	}
+	bTrustProcess = CRULES_FIND_TRUST_PROCESS(wszProcessPath);
+	if (bTrustProcess)
+	{
+		bIsAllowRun = TRUE;
+	}
+
+	return bIsAllowRun;
+}
+
+
 static 
 BOOLEAN
 AllowedRegistryOperation(
@@ -119,21 +199,62 @@ RegistryProtectorEx::NotifyOnRegistryActions(
 		// 
 	} BASE_REG_KEY_INFO, * PBASE_REG_KEY_INFO;
 
-	HANDLE	hPid = PsGetCurrentProcessId();
-	BOOLEAN bAllowed = FALSE;
+	HANDLE	hPid			= PsGetCurrentProcessId();
+	BOOLEAN bAllowed		= FALSE;
+	BOOLEAN bAllowAutoRun	= FALSE;
 
 	switch (eNotifyClass)
 	{
+	case RegNtPreCreateKey:
+	case RegNtPreCreateKeyEx:
+	{
+		PBASE_REG_KEY_INFO pkeyInfo = reinterpret_cast<PBASE_REG_KEY_INFO>(Argument2);
+		if (!pkeyInfo)
+		{
+			status = STATUS_SUCCESS;
+			break;
+		}
+		bAllowAutoRun = MonitorAutorunOperation(hPid, pkeyInfo->pObject);
+		if (!bAllowAutoRun)
+		{
+			status = STATUS_ACCESS_DENIED;
+			break;
+		}
 
+	}
+	break;
+		 
 		//case RegNtPreOpenKey:
 		//case RegNtPreOpenKeyEx:
 		//
-		//case RegNtPreCreateKey:
-		//case RegNtPreCreateKeyEx:
+		
+	case RegNtPreSetValueKey:
+	{
+		PBASE_REG_KEY_INFO pkeyInfo = reinterpret_cast<PBASE_REG_KEY_INFO>(Argument2);
+		if (!pkeyInfo)
+		{
+			status = STATUS_SUCCESS;
+			break;
+		}
+
+		bAllowed = AllowedRegistryOperation(hPid, pkeyInfo->pObject);
+		if (!bAllowed)
+		{
+			status = STATUS_ACCESS_DENIED;
+			break;
+		}
+
+		bAllowAutoRun = MonitorAutorunOperation(hPid, pkeyInfo->pObject);
+		if (!bAllowAutoRun)
+		{
+			status = STATUS_ACCESS_DENIED;
+			break;
+		}
+	}
+	break;
 
 	case RegNtPreDeleteKey:
 	case RegNtPreRenameKey:
-	case RegNtPreSetValueKey:
 	case RegNtPreDeleteValueKey:
 	{
 		PBASE_REG_KEY_INFO pkeyInfo = reinterpret_cast<PBASE_REG_KEY_INFO>(Argument2);
