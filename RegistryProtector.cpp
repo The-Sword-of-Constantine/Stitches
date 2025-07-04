@@ -7,14 +7,20 @@
 extern LazyInstance<GlobalData> g_pGlobalData;
 
 
-
+/*
+* "\REGISTRY\USER\S-1-5-21-824517415-2516791506-2384372594-1000\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+*/
 static 
 UNICODE_STRING 
 g_AutoRunKeys[] = {
-		 RTL_CONSTANT_STRING(
-			L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUN\\*"),
-		 RTL_CONSTANT_STRING(
-			L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUN")
+	RTL_CONSTANT_STRING(
+		L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUN"),
+	RTL_CONSTANT_STRING(
+		L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUN\\*"),
+	RTL_CONSTANT_STRING(
+		L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUNONCE"),
+	RTL_CONSTANT_STRING(
+		L"\\REGISTRY\\USER\\S*\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\RUNONCE\\*")
 };
 
 constexpr ULONG AUTORUN_COUNT = sizeof(g_AutoRunKeys) / sizeof(g_AutoRunKeys[0]);
@@ -53,18 +59,6 @@ MonitorAutorunOperation(
 	}
 	UNICODE_STRING ustrRgPath{};
 	RtlInitUnicodeString(&ustrRgPath, wszRegistryPath);
-
-	/*auto InAutoRunKeys = [](PUNICODE_STRING RegPath) {
-		for (auto i = 0; i != AUTORUN_COUNT; ++i)
-		{
-			if (FsRtlIsNameInExpression(&g_AutoRunKeys[i], RegPath, TRUE, NULL))
-			{
-				return TRUE;
-			}
-		}
-
-		return FALSE;
-	};*/
 
 	bResult = IsInAutoRunKeys(&ustrRgPath);
 
@@ -208,13 +202,13 @@ RegistryProtectorEx::NotifyOnRegistryActions(
 	case RegNtPreCreateKey:
 	case RegNtPreCreateKeyEx:
 	{
-		PBASE_REG_KEY_INFO pkeyInfo = reinterpret_cast<PBASE_REG_KEY_INFO>(Argument2);
+		PREG_CREATE_KEY_INFORMATION_V1 pkeyInfo = reinterpret_cast<PREG_CREATE_KEY_INFORMATION_V1>(Argument2);
 		if (!pkeyInfo)
 		{
 			status = STATUS_SUCCESS;
 			break;
 		}
-		bAllowAutoRun = MonitorAutorunOperation(hPid, pkeyInfo->pObject);
+		bAllowAutoRun = MonitorAutorunOperation(hPid, pkeyInfo->RootObject);
 		if (!bAllowAutoRun)
 		{
 			status = STATUS_ACCESS_DENIED;
