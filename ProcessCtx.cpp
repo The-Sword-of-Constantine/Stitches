@@ -130,7 +130,7 @@ ProcessCtx::DeleteProcessCtxByPid(IN CONST HANDLE ProcessId)
 
 	PLIST_ENTRY pEntry = g_pGlobalData->ProcessCtxList.Flink;
 
-	while (pEntry != &g_pGlobalData->ProcessCtxList)
+	while (pEntry != &g_pGlobalData->ProcessCtxList && pEntry)
 	{
 		ProcessContext* pNode = CONTAINING_RECORD(pEntry, ProcessContext, ListHeader);
 		if (pNode)
@@ -178,7 +178,7 @@ ProcessCtx::FindProcessCtxByPid(IN CONST HANDLE Pid)
 	ProcessContext* pNode{ nullptr };
 	PLIST_ENTRY			pEntry = g_pGlobalData->ProcessCtxList.Flink;
 
-	while (pEntry != &g_pGlobalData->ProcessCtxList)
+	while (pEntry != &g_pGlobalData->ProcessCtxList && pEntry)
 	{
 		pNode = CONTAINING_RECORD(pEntry, ProcessContext, ListHeader);
 		if (pNode && (Pid == pNode->Pid))
