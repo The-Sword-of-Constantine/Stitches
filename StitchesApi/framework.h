@@ -10,3 +10,6 @@
 #include <mutex>
 #include <format>
 #include <filesystem>
+#include <fltUser.h>
+
+#pragma comment(lib, "FltLib.lib")

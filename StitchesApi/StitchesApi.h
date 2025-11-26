@@ -24,6 +24,7 @@ extern "C"
 #endif
 #endif // _C_API
 
+
 	template <typename T>
 	class Singleton {
 	public:
@@ -50,6 +51,20 @@ extern "C"
 
 	template <typename T>
 	std::unique_ptr<T> Singleton<T>::_Instance = nullptr;
+
+
+	constexpr ULONG MAX_THREAD_POOL = 64;
+
+	struct IO_MESSAGE
+	{
+		OVERLAPPED OverLapped;
+
+		FILTER_MESSAGE_HEADER FilterMessageHander;
+
+		UCHAR Data[65535];
+	};
+
+
 
 
 	// 此类是从 dll 导出的
@@ -86,6 +101,11 @@ extern "C"
 
 		BOOLEAN STITCHESAPI_CC SetHookDllPath(CONST std::wstring& x64dll, CONST std::wstring& x86dll);
 
+		BOOLEAN STITCHESAPI_CC AdjustPriviledges();
+
+		BOOLEAN STITCHESAPI_CC HandleIoData();
+
+
 	protected:
 		BOOLEAN
 		STITCHESAPI_CC
@@ -95,8 +115,30 @@ extern "C"
 			CONST std::wstring& Altitude,
 			BOOLEAN AutoStart = TRUE);
 
+
+	public:
+		HANDLE const GetIocpHandle ()
+		{
+			return m_hIocp;
+		}
+
+		HANDLE const GetCommunicationPort()
+		{
+			return m_hCommunicationPort;
+		}
+
+
 	private:
-		WCHAR m_wstrServiceName[MAX_PATH]{};
+		WCHAR	m_wstrServiceName[MAX_PATH]{};
+
+		WCHAR	m_wstrPortName[MAX_PATH]{};
+		HANDLE	m_hCommunicationPort{ nullptr };
+
+		HANDLE	m_hIocp{ nullptr };
+		ULONG	m_nThreadPoolSize{ 0 };
+		ULONG	m_ThreadPoolArray[MAX_THREAD_POOL]{ 0 };
+
+
 	};
 
 

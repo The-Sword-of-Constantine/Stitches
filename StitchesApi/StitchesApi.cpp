@@ -517,3 +517,171 @@ CStitchesApi::SetHookDllPath(
 
 	return TRUE;
 }
+
+BOOLEAN 
+STITCHESAPI_CC 
+CStitchesApi::AdjustPriviledges()
+{
+	BOOLEAN bSuccess{ TRUE };
+
+	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
+	if (hProcess)
+	{
+		HANDLE hToken{ nullptr };
+		do 
+		{
+			if (OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES, &hToken))
+			{
+				TOKEN_PRIVILEGES tokenPrivileges{};
+				LUID luid{};
+
+				if (LookupPrivilegeValue(nullptr, SE_DEBUG_NAME, &luid))
+				{
+					tokenPrivileges.PrivilegeCount = 1;
+					tokenPrivileges.Privileges[0].Luid = luid;
+					tokenPrivileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+				}
+				else
+				{
+					bSuccess = FALSE;
+					break;
+				}
+
+				if (!AdjustTokenPrivileges(hToken,
+						FALSE, 
+						&tokenPrivileges, 
+						sizeof(TOKEN_PRIVILEGES),
+						nullptr, 
+						nullptr)
+					)
+				{
+					bSuccess = FALSE;
+					break;
+				}
+			}
+		} while (FALSE);
+
+		if (hToken)
+		{
+			CloseHandle(hToken);
+		}
+
+		CloseHandle(hProcess);
+	}
+
+
+	return bSuccess;
+}
+
+
+static
+UINT
+_stdcall
+HandleIoFuc(PVOID param)
+{
+	BOOLEAN bResult{ FALSE };
+
+	auto pSsApi = reinterpret_cast<CStitchesApi*>(param);
+
+	DWORD			dwReadBytes{ 0 };
+	ULONG_PTR		uCompletionKey{ 0 };
+	LPOVERLAPPED	lpOverlapped{ nullptr };
+
+	IO_MESSAGE*		pIoData{ nullptr };
+	EventData*		pEventData{ nullptr };
+
+	while (true)
+	{
+		bResult = GetQueuedCompletionStatus(pSsApi->GetIocpHandle(), 
+											&dwReadBytes, 
+											&uCompletionKey, 
+											&lpOverlapped, 
+											INFINITE);
+		if(!bResult)
+		{
+			break;
+		}
+
+		pIoData = CONTAINING_RECORD(lpOverlapped, IO_MESSAGE, OverLapped);
+		if (!pIoData)
+		{
+			break;
+		}
+
+		pEventData = reinterpret_cast<EventData*>(pIoData->Data);
+		
+		{
+			// 解析
+		}
+		
+		auto hResult = FilterGetMessage(pSsApi->GetCommunicationPort(),
+										&pIoData->FilterMessageHander,
+										sizeof(IO_MESSAGE) - sizeof(OVERLAPPED),
+										&pIoData->OverLapped);
+		if (S_OK != hResult)
+		{
+			break;
+		}
+	}
+
+
+	return 0;
+}
+
+
+BOOLEAN 
+STITCHESAPI_CC
+CStitchesApi::HandleIoData()
+{
+	BOOLEAN bResult{ TRUE };
+
+	HRESULT hResult{ 0 };
+
+	do 
+	{
+		// 创建驱动层与应用层的统信端口
+		hResult = FilterConnectCommunicationPort(m_wstrPortName, 0, nullptr, 0, nullptr, &m_hCommunicationPort);
+		if (IS_ERROR(hResult))
+		{
+			break;
+		}
+
+		// 创建IO完成端口
+		m_hIocp = CreateIoCompletionPort(m_hCommunicationPort, nullptr, 0, m_nThreadPoolSize);
+		if (!m_hIocp)
+		{
+			break;
+		}
+
+		// 创建线程解析驱动层向应用层发送的数据
+		for (auto i = 0; i != m_nThreadPoolSize; ++i)
+		{
+		    m_ThreadPoolArray[i] = _beginthreadex(nullptr, 0, HandleIoFuc, this, 0, nullptr);
+			if (0 == m_ThreadPoolArray[i])
+			{
+				break;
+			}
+		}
+
+		bResult = TRUE;
+		return bResult;
+	} while (FALSE);
+
+	// failure
+	if (!bResult)
+	{
+		if (m_hIocp)
+		{
+			CloseHandle(m_hIocp);
+			m_hIocp = nullptr;
+		}
+
+		if (m_hCommunicationPort)
+		{
+			CloseHandle(m_hCommunicationPort);
+			m_hCommunicationPort = nullptr;
+		}
+	}
+
+	return bResult;
+}
