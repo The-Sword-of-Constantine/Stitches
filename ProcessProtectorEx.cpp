@@ -172,7 +172,14 @@ ProcessProtectorEx::ProcessPreOperationCallback(
 	{
 		if (processCtx->ProcessPath.Length < sizeof(wszTargetProcess))
 		{
-			RtlCopyMemory(wszTargetProcess, processCtx->ProcessPath.Buffer, processCtx->ProcessPath.Length);
+			__try
+			{
+				RtlCopyMemory(wszTargetProcess, processCtx->ProcessPath.Buffer, processCtx->ProcessPath.Length);
+			}
+			__except (EXCEPTION_EXECUTE_HANDLER)
+			{
+				status = STATUS_ACCESS_VIOLATION;
+			}
 		}
 	}
 	else

@@ -132,7 +132,17 @@ DriverDispatch(
 					g_pGlobalData->InjectDllx64.Length = 
 					g_pGlobalData->InjectDllx64.MaximumLength = static_cast<USHORT>((wcslen(pHookDllPath->x64Dll) + 1) * sizeof(WCHAR));
 					
-					RtlCopyMemory(g_pGlobalData->InjectDllx64.Buffer, pHookDllPath->x64Dll, wcslen(pHookDllPath->x64Dll) * sizeof(WCHAR));
+					__try
+					{
+						RtlCopyMemory(g_pGlobalData->InjectDllx64.Buffer,
+									  pHookDllPath->x64Dll, 
+									  wcslen(pHookDllPath->x64Dll) * sizeof(WCHAR));
+					}
+					__except(EXCEPTION_EXECUTE_HANDLER)
+					{
+						Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+						break;
+					}
 				}
 				else
 				{
@@ -143,10 +153,19 @@ DriverDispatch(
 				if (g_pGlobalData->InjectDllx86.Buffer)
 				{
 					RtlZeroMemory(g_pGlobalData->InjectDllx86.Buffer, nAllocDllLength);
-					g_pGlobalData->InjectDllx86.Length = 
-					g_pGlobalData->InjectDllx86.MaximumLength = static_cast<USHORT>((wcslen(pHookDllPath->x86Dll) + 1) * sizeof(WCHAR));
-					
-					RtlCopyMemory(g_pGlobalData->InjectDllx86.Buffer, pHookDllPath->x86Dll, wcslen(pHookDllPath->x86Dll) * sizeof(WCHAR));
+					g_pGlobalData->InjectDllx86.Length =
+						g_pGlobalData->InjectDllx86.MaximumLength = static_cast<USHORT>((wcslen(pHookDllPath->x86Dll) + 1) * sizeof(WCHAR));
+					__try
+					{
+						RtlCopyMemory(g_pGlobalData->InjectDllx86.Buffer, 
+									  pHookDllPath->x86Dll, 
+									  wcslen(pHookDllPath->x86Dll) * sizeof(WCHAR));
+					}
+					__except (EXCEPTION_EXECUTE_HANDLER)
+					{
+						Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+						break;
+					}
 				}
 				else
 				{
@@ -169,8 +188,15 @@ DriverDispatch(
 			if (nInputbufferLength < sizeof(wszTrustProcess) && 
 				pIoBuffer)
 			{
-				RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
-				Irp->IoStatus.Status = CRULES_ADD_TRUST_PROCESS(wszTrustProcess);
+				__try
+				{
+					RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
+					Irp->IoStatus.Status = CRULES_ADD_TRUST_PROCESS(wszTrustProcess);
+				}			
+				__except (EXCEPTION_EXECUTE_HANDLER)
+				{
+					Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+				}
 			}
 			else
 			{
@@ -185,8 +211,15 @@ DriverDispatch(
 			if (nInputbufferLength < sizeof(wszTrustProcess) &&
 				pIoBuffer)
 			{
-				RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
-				Irp->IoStatus.Status = CRULES_DEL_TRUST_PROCESS(wszTrustProcess);
+				__try
+				{
+					RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
+					Irp->IoStatus.Status = CRULES_DEL_TRUST_PROCESS(wszTrustProcess);
+				}	
+				__except (EXCEPTION_EXECUTE_HANDLER)
+				{
+					Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+				}
 			}
 			else
 			{
@@ -201,8 +234,15 @@ DriverDispatch(
 			if (nInputbufferLength < sizeof(wszTrustProcess) &&
 				pIoBuffer)
 			{
-				RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
-				Irp->IoStatus.Status = CRULES_ADD_PROTECT_PROCESS(wszTrustProcess);
+				__try
+				{
+					RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
+					Irp->IoStatus.Status = CRULES_ADD_PROTECT_PROCESS(wszTrustProcess);
+				}	
+				__except (EXCEPTION_EXECUTE_HANDLER)
+				{
+					Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+				}
 			}
 			else
 			{
@@ -217,8 +257,15 @@ DriverDispatch(
 			if (nInputbufferLength < sizeof(wszTrustProcess) &&
 				pIoBuffer)
 			{
-				RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
-				Irp->IoStatus.Status = CRULES_DEL_PROTECT_PROCESS(wszTrustProcess);
+				__try
+				{
+					RtlCopyMemory(wszTrustProcess, pIoBuffer, nInputbufferLength);
+					Irp->IoStatus.Status = CRULES_DEL_PROTECT_PROCESS(wszTrustProcess);
+				}
+				__except (EXCEPTION_EXECUTE_HANDLER)
+				{
+					Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+				}
 			}
 			else
 			{
@@ -233,8 +280,15 @@ DriverDispatch(
 			if (nInputbufferLength < sizeof(wszProtectRegistry) &&
 				pIoBuffer)
 			{
-				RtlCopyMemory(wszProtectRegistry, pIoBuffer, nInputbufferLength);
-				Irp->IoStatus.Status = CRULES_ADD_PROTECT_REGISTRY(wszProtectRegistry);
+				__try
+				{
+					RtlCopyMemory(wszProtectRegistry, pIoBuffer, nInputbufferLength);
+					Irp->IoStatus.Status = CRULES_ADD_PROTECT_REGISTRY(wszProtectRegistry);
+				}
+				__except (EXCEPTION_EXECUTE_HANDLER)
+				{
+					Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+				}
 			}
 			else
 			{
@@ -249,8 +303,16 @@ DriverDispatch(
 			if (nInputbufferLength < sizeof(wszProtectRegistry) &&
 				pIoBuffer)
 			{
-				RtlCopyMemory(wszProtectRegistry, pIoBuffer, nInputbufferLength);
-				Irp->IoStatus.Status = CRULES_DEL_PROTECT_REGISTRY(wszProtectRegistry);
+				__try
+				{
+					RtlCopyMemory(wszProtectRegistry, pIoBuffer, nInputbufferLength);
+					Irp->IoStatus.Status = CRULES_DEL_PROTECT_REGISTRY(wszProtectRegistry);
+				}
+				__except(EXCEPTION_EXECUTE_HANDLER)
+				{
+					Irp->IoStatus.Status = STATUS_ACCESS_VIOLATION;
+				}
+
 			}
 			else
 			{
@@ -260,6 +322,7 @@ DriverDispatch(
 		break;
 
 		default:
+			Irp->IoStatus.Status = STATUS_INVALID_DEVICE_REQUEST;
 			break;
 		}
 	}
