@@ -147,4 +147,9 @@
       <Filter>Communication</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Inf Include="Stitches.inf">
+      <Filter>Resource Files</Filter>
+    </Inf>
+  </ItemGroup>
 </Project>
