@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Singleton.hpp"
 
 struct ProcessContext
@@ -10,6 +10,8 @@ struct ProcessContext
 	BOOLEAN			bProtected;
 	BOOLEAN			bIsWow64;
 	BOOLEAN			bTrusted;
+	BOOLEAN			bIsProcessParentPidSpoofed;		// 是否是父进程欺骗
+	BOOLEAN			bProcessGhosting;				// 文件被删除验证Process Ghosting
 };
 
 constexpr ULONG ProcessContextSize = sizeof(ProcessContext);

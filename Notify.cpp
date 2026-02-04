@@ -142,8 +142,8 @@ ProcessNotify::ProcessNotifyRoutine(
 
 	if (CreateInfo)
 	{
-		if (CreateInfo->FileOpenNameAvailable)
-		{
+		//if (CreateInfo->FileOpenNameAvailable)
+		//{
 			// test ... .. .
 			if (UnicodeStringContains(const_cast<PUNICODE_STRING>(CreateInfo->ImageFileName), L"mimikatz.exe"))
 			{
@@ -154,7 +154,7 @@ ProcessNotify::ProcessNotifyRoutine(
 			}
 
 			PROCESS_CTX_ADD(Process, ProcessId, CreateInfo);
-		}
+		//}
 	}
 	else
 	{

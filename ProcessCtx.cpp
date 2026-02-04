@@ -1,4 +1,4 @@
-#include "ProcessCtx.hpp"
+﻿#include "ProcessCtx.hpp"
 #include "Imports.hpp"
 #include "Utils.hpp"
 #include "Log.hpp"
@@ -48,6 +48,27 @@ ProcessCtx::AddProcessContext(
 	{
 		pProcessCtx->bIsWow64 = (g_pGlobalData->PsGetProcessWow64Process(Process) != nullptr);
 	}
+
+	// 验证是否是父进程欺骗
+	if (CreateInfo->ParentProcessId != CreateInfo->CreatingThreadId.UniqueProcess)
+	{
+		pProcessCtx->bIsProcessParentPidSpoofed = TRUE;
+	}
+	else
+	{
+		pProcessCtx->bIsProcessParentPidSpoofed = FALSE;
+	}
+
+	// 验证Process Ghosting
+	if (!CreateInfo->FileOpenNameAvailable)
+	{
+		pProcessCtx->bProcessGhosting = TRUE;
+	}
+	else
+	{
+		pProcessCtx->bProcessGhosting = FALSE;
+	}
+
 
 	do
 	{
