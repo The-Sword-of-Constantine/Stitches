@@ -3,19 +3,71 @@ use std::{ffi::c_void, mem::size_of, mem::zeroed, ptr::null_mut};
 
 use windows::{
     Win32::{
-        Foundation::HANDLE,
+        Foundation::{
+            HANDLE,
+            LUID,
+            CloseHandle,
+        },
+        Security::{
+            LookupPrivilegeValueA,
+            TOKEN_ADJUST_PRIVILEGES,
+            TOKEN_QUERY,
+            TOKEN_PRIVILEGES,
+            LUID_AND_ATTRIBUTES,
+            SE_PRIVILEGE_ENABLED,
+            AdjustTokenPrivileges
+        },
+
         System::{
             Memory::{GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc},
             Threading::{
                 CreateProcessA, DeleteProcThreadAttributeList, EXTENDED_STARTUPINFO_PRESENT,
                 InitializeProcThreadAttributeList, LPPROC_THREAD_ATTRIBUTE_LIST, OpenProcess,
                 PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, PROCESS_ALL_ACCESS, PROCESS_INFORMATION,
-                STARTUPINFOEXA, UpdateProcThreadAttribute,
+                STARTUPINFOEXA, UpdateProcThreadAttribute,OpenProcessToken,GetCurrentProcess,
             },
+
         },
     },
-    core::PSTR,
+    core::{
+        PSTR,
+        PCSTR,
+        s,
+    },
 };
+
+fn enable_privilege(name:PCSTR) -> () {
+    unsafe {
+        let mut token:HANDLE = zeroed();
+        OpenProcessToken(GetCurrentProcess(),
+                         TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+                         &mut token).expect("TODO: panic message");
+
+        let mut luid_private:LUID = zeroed();
+        LookupPrivilegeValueA(None, name, &mut luid_private).expect("TODO: panic message");
+
+        let mut tp = TOKEN_PRIVILEGES {
+            PrivilegeCount: 1,
+            Privileges: [LUID_AND_ATTRIBUTES {
+                Luid: luid_private,
+                Attributes: SE_PRIVILEGE_ENABLED,
+            }],
+        };
+
+        let _r = AdjustTokenPrivileges(
+            token,
+            false,
+            Some(&mut tp),
+            0,
+            None,
+            None,
+        );
+
+        let _ = CloseHandle(token);
+
+    }
+}
+
 
 /// 使用 sysinfo 库获取进程 PID
 fn get_pid_by_name(process_name: &str) -> Option<u32> {
@@ -36,8 +88,11 @@ fn get_pid_by_name(process_name: &str) -> Option<u32> {
 
 fn main() {
 
-
     unsafe {
+
+        // 提权
+        enable_privilege(s!("SeDebugPrivilege"));
+
         // using explorer.exe as spoofing process
         let parent_process_id = get_pid_by_name("explorer.exe").unwrap();
         if parent_process_id == 0 {
@@ -45,7 +100,9 @@ fn main() {
         }
         
         
-        let handle_of_ppid = OpenProcess(PROCESS_ALL_ACCESS, false, parent_process_id);
+        let handle_of_ppid = OpenProcess(PROCESS_ALL_ACCESS, 
+                                         false, 
+                                         parent_process_id);
         if handle_of_ppid.is_err() {
             panic!("Parent process ID 0 not found");
         }
