@@ -12,6 +12,9 @@ struct ProcessContext
 	BOOLEAN			bTrusted;
 	BOOLEAN			bIsProcessParentPidSpoofed;		// 是否是父进程欺骗
 	BOOLEAN			bProcessGhosting;				// 文件被删除验证Process Ghosting
+
+	ULONG_PTR		NtdllBase;						// check Direct Syscall
+	ULONG_PTR		NtdllEnd;
 };
 
 constexpr ULONG ProcessContextSize = sizeof(ProcessContext);

@@ -215,14 +215,19 @@ ImageNotify::ImageNotifyRoutine(
 			if (KWstrnstr(pProcessContext->ProcessPath.Buffer, L"system32\\notepad.exe") &&
 				KWstrnstr(FullImageName->Buffer, L"system32\\ntdll.dll"))
 			{
+				pProcessContext->NtdllBase = reinterpret_cast<ULONG_PTR>(ImageInfo->ImageBase);
+				pProcessContext->NtdllEnd  = pProcessContext->NtdllBase + ImageInfo->ImageSize;
+
 				ApcInjectNativeProcess(FullImageName, ProcessId, ImageInfo, &g_pGlobalData->InjectDllx64);
 			}
-			else
-				if (KWstrnstr(pProcessContext->ProcessPath.Buffer, L"SysWOW64\\notepad.exe") &&
-					KWstrnstr(FullImageName->Buffer, L"SysWOW64\\ntdll.dll"))
-				{
-					ApcInjectWow64Process(FullImageName, ProcessId, ImageInfo, &g_pGlobalData->InjectDllx86);
-				}
+			else if (KWstrnstr(pProcessContext->ProcessPath.Buffer, L"SysWOW64\\notepad.exe") &&
+					 KWstrnstr(FullImageName->Buffer, L"SysWOW64\\ntdll.dll"))
+			{
+				pProcessContext->NtdllBase = reinterpret_cast<ULONG_PTR>(ImageInfo->ImageBase);
+				pProcessContext->NtdllEnd  = pProcessContext->NtdllBase + ImageInfo->ImageSize;
+
+				ApcInjectWow64Process(FullImageName, ProcessId, ImageInfo, &g_pGlobalData->InjectDllx86);
+			}
 		}
 	}
 	else

@@ -50,6 +50,12 @@ ProcessCtx::AddProcessContext(
 	}
 
 	// 验证是否是父进程欺骗
+	// https://learn.microsoft.com/zh-cn/windows-hardware/drivers/ddi/ntddk/ns-ntddk-_ps_create_notify_info
+	// 创建新进程的进程和线程的进程 ID 和线程 ID。 
+	// CreatingThreadId->UniqueProcess 包含进程 ID，
+	// CreatingThreadId->UniqueThread  包含线程 ID
+	// ParentProcessId : 新进程的父进程的进程 ID。 请注意，父进程不一定与创建新进程的进程相同
+	// 父进程欺骗会修改CreateInfo->ParentProcessId的值为伪造父进程pid
 	if (CreateInfo->ParentProcessId != CreateInfo->CreatingThreadId.UniqueProcess)
 	{
 		pProcessCtx->bIsProcessParentPidSpoofed = TRUE;
