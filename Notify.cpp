@@ -62,7 +62,7 @@ ThreadNotify::ThreadNotifyRoutine(
 		// 因为这样的判断会导致 父进程创建子进程的情况
 		// 最好是判断父进程pid是否和processid相等的情况
 		auto bRemoteThread = [&]() { return (PsGetCurrentProcessId() != ProcessId) &&
-			(PsInitialSystemProcess != PsGetCurrentProcessId()) &&
+			(PsInitialSystemProcess != PsGetCurrentProcess()) &&
 			(ProcessId != PsGetProcessId(PsInitialSystemProcess));
 		};
 
