@@ -1,49 +1,38 @@
-use sysinfo::System;
 use std::{ffi::c_void, mem::size_of, mem::zeroed, ptr::null_mut};
+use sysinfo::System;
 
+use windows::Win32::System::Memory::HeapFree;
 use windows::{
     Win32::{
-        Foundation::{
-            HANDLE,
-            LUID,
-            CloseHandle,
-        },
+        Foundation::{CloseHandle, HANDLE, LUID},
         Security::{
-            LookupPrivilegeValueA,
-            TOKEN_ADJUST_PRIVILEGES,
-            TOKEN_QUERY,
-            TOKEN_PRIVILEGES,
-            LUID_AND_ATTRIBUTES,
-            SE_PRIVILEGE_ENABLED,
-            AdjustTokenPrivileges
+            AdjustTokenPrivileges, LUID_AND_ATTRIBUTES, LookupPrivilegeValueA,
+            SE_PRIVILEGE_ENABLED, TOKEN_ADJUST_PRIVILEGES, TOKEN_PRIVILEGES, TOKEN_QUERY,
         },
-
         System::{
             Memory::{GetProcessHeap, HEAP_ZERO_MEMORY, HeapAlloc},
             Threading::{
                 CreateProcessA, DeleteProcThreadAttributeList, EXTENDED_STARTUPINFO_PRESENT,
-                InitializeProcThreadAttributeList, LPPROC_THREAD_ATTRIBUTE_LIST, OpenProcess,
-                PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, PROCESS_ALL_ACCESS, PROCESS_INFORMATION,
-                STARTUPINFOEXA, UpdateProcThreadAttribute,OpenProcessToken,GetCurrentProcess,
+                GetCurrentProcess, InitializeProcThreadAttributeList, LPPROC_THREAD_ATTRIBUTE_LIST,
+                OpenProcess, OpenProcessToken, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS,
+                PROCESS_ALL_ACCESS, PROCESS_INFORMATION, STARTUPINFOEXA, UpdateProcThreadAttribute,
             },
-
         },
     },
-    core::{
-        PSTR,
-        PCSTR,
-        s,
-    },
+    core::{PCSTR, PSTR, s},
 };
 
-fn enable_privilege(name:PCSTR) -> () {
+fn enable_privilege(name: PCSTR) -> () {
     unsafe {
-        let mut token:HANDLE = zeroed();
-        OpenProcessToken(GetCurrentProcess(),
-                         TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
-                         &mut token).expect("TODO: panic message");
+        let mut token: HANDLE = zeroed();
+        OpenProcessToken(
+            GetCurrentProcess(),
+            TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+            &mut token,
+        )
+        .expect("TODO: panic message");
 
-        let mut luid_private:LUID = zeroed();
+        let mut luid_private: LUID = zeroed();
         LookupPrivilegeValueA(None, name, &mut luid_private).expect("TODO: panic message");
 
         let mut tp = TOKEN_PRIVILEGES {
@@ -54,20 +43,11 @@ fn enable_privilege(name:PCSTR) -> () {
             }],
         };
 
-        let _r = AdjustTokenPrivileges(
-            token,
-            false,
-            Some(&mut tp),
-            0,
-            None,
-            None,
-        );
+        let _r = AdjustTokenPrivileges(token, false, Some(&mut tp), 0, None, None);
 
         let _ = CloseHandle(token);
-
     }
 }
-
 
 /// 使用 sysinfo 库获取进程 PID
 fn get_pid_by_name(process_name: &str) -> Option<u32> {
@@ -87,9 +67,7 @@ fn get_pid_by_name(process_name: &str) -> Option<u32> {
 }
 
 fn main() {
-
     unsafe {
-
         // 提权
         enable_privilege(s!("SeDebugPrivilege"));
 
@@ -98,18 +76,14 @@ fn main() {
         if parent_process_id == 0 {
             panic!("Parent process ID 0 not found");
         }
-        
-        
-        let handle_of_ppid = OpenProcess(PROCESS_ALL_ACCESS, 
-                                         false, 
-                                         parent_process_id);
+
+        let handle_of_ppid = OpenProcess(PROCESS_ALL_ACCESS, false, parent_process_id);
         if handle_of_ppid.is_err() {
             panic!("Parent process ID 0 not found");
         }
-        
-        
-        let mut startup_info:STARTUPINFOEXA = zeroed();
-        let mut process_info:PROCESS_INFORMATION = zeroed();
+
+        let mut startup_info: STARTUPINFOEXA = zeroed();
+        let mut process_info: PROCESS_INFORMATION = zeroed();
         startup_info.StartupInfo.cb = size_of::<STARTUPINFOEXA>() as u32;
 
         let mut attr_size: usize = 0;
@@ -123,11 +97,9 @@ fn main() {
         );
 
         // allocate LPPROC_THREAD_ATTRIBUTE_LIST
-        let attr_list = LPPROC_THREAD_ATTRIBUTE_LIST(HeapAlloc(
-            GetProcessHeap().unwrap(),
-            HEAP_ZERO_MEMORY,
-            attr_size,
-        ));
+        let attr_list_mem = HeapAlloc(GetProcessHeap().unwrap(), HEAP_ZERO_MEMORY, attr_size);
+
+        let attr_list = LPPROC_THREAD_ATTRIBUTE_LIST(attr_list_mem);
 
         // initialize
         let _ = InitializeProcThreadAttributeList(Some(attr_list), 1, Some(0), &mut attr_size);
@@ -160,5 +132,14 @@ fn main() {
         );
 
         DeleteProcThreadAttributeList(attr_list);
+
+        HeapFree(
+            GetProcessHeap().unwrap(),
+            HEAP_ZERO_MEMORY,
+            Some(attr_list_mem),
+        )
+        .unwrap();
+
+        CloseHandle(handle_of_ppid.unwrap()).unwrap();
     }
 }
