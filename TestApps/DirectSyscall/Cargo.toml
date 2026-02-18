@@ -1,0 +1,37 @@
+[package]
+name = "DirectSyscall"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sysinfo = { version = "0.38.2", features = ["windows"] }
+rust_syscalls = { git = "https://github.com/janoglezcampos/rust_syscalls", features = ["_DIRECT_"] }
+winapi = { version = "0.3.9", features = ["winuser",
+    "setupapi",
+    "dbghelp",
+    "wlanapi",
+    "winnls",
+    "wincon",
+    "fileapi",
+    "sysinfoapi",
+    "fibersapi",
+    "debugapi",
+    "winerror",
+    "wininet",
+    "winhttp",
+    "synchapi",
+    "securitybaseapi",
+    "wincrypt",
+    "psapi",
+    "tlhelp32",
+    "heapapi",
+    "shellapi",
+    "memoryapi",
+    "processthreadsapi",
+    "errhandlingapi",
+    "winbase",
+    "handleapi",
+    "ntstatus"] }
+ntapi = "0.4.3"
+
+
