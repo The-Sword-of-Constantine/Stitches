@@ -3,7 +3,8 @@
 
 这个项目是集成了之前的一些Windows kernel开发代码，类似一个缝合怪项目所以取名为"Stitches"
 
-目前的功能有
+## 目前的功能有
+### Kernel Code
 * APC 内核模式早鸟注入DLL (kernel apc injector(early bird mode))
 * 内核日志实现（kernel log informations）
 * 探针agent
@@ -17,10 +18,18 @@
   * USB设备管控（待测试...）
 * ...
 
+### Test App Code
+* 父进程欺骗
+* Direct Syscall
+
 
 ### 参考项目
 > https://github.com/ComodoSecurity/openedr   
 > https://github.com/virtio-win/kvm-guest-drivers-windows
+> https://github.com/janoglezcampos/rust_syscalls
+> https://github.com/joaoviictorti/RustRedOps
+> https://github.com/Whitecat18/Rust-for-Malware-Development
+
 
 ### 感谢
 感谢好友 jacky(https://github.com/lzty)

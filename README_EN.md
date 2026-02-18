@@ -2,6 +2,7 @@
 EN | [中文](./Readme.md)
 
 ## Feature
+### Kernel Code
 * Early Birld Apc Injector
 * Kernel log informations
 * Agent
@@ -14,3 +15,15 @@ EN | [中文](./Readme.md)
   * File Protector
   * USB device control（Wating...）
 * ...
+
+
+### Test App Code
+* Parent PID Spoofing
+* Direct Syscall
+
+
+> https://github.com/ComodoSecurity/openedr   
+> https://github.com/virtio-win/kvm-guest-drivers-windows
+> https://github.com/janoglezcampos/rust_syscalls
+> https://github.com/joaoviictorti/RustRedOps
+> https://github.com/Whitecat18/Rust-for-Malware-Development
