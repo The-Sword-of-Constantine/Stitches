@@ -1,0 +1,20 @@
+[package]
+name = "IndirectSyscall"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rust_syscalls = { git = "https://github.com/janoglezcampos/rust_syscalls", features = ["_INDIRECT_"] }
+
+sysinfo = { version = "0.38.2", features = ["windows"] }
+
+ntapi = "0.4.3"
+
+[dependencies.windows]
+version = "0.62.2"
+features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_System_Memory",
+]
