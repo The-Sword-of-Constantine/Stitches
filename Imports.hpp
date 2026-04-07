@@ -408,7 +408,8 @@ struct  GlobalData
 #endif
 	NPAGED_LOOKASIDE_LIST					ProcessCtxNPList;
 	LIST_ENTRY								ProcessCtxList;
-	kstd::fast_mutex						ProcessCtxFastMutex;
+	//kstd::fast_mutex						ProcessCtxFastMutex;
+	kstd::spinlock_mutex					ProcessCtxSpinLock;
 
 
 	// APC Injector

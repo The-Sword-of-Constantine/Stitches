@@ -24,7 +24,7 @@ namespace kstd
 	struct empty_mutex
 	{
 		void lock() {}
-		bool try_lock() {}
+		bool tryLock() {}
 		void unlock() {}
 	};
 	/*
@@ -41,7 +41,7 @@ namespace kstd
 		shared_mutex() noexcept;
 		~shared_mutex() noexcept;
 		void lock() noexcept;
-		bool try_lock() noexcept;
+		bool tryLock() noexcept;
 		void unlock() noexcept;
 		void lock_shared() noexcept;
 		bool try_lock_shared() noexcept;
@@ -106,7 +106,7 @@ namespace kstd
 			m_mutex->lock(&m_handle);
 		}
 
-		constexpr bool try_lock() noexcept(false)
+		constexpr bool tryLock() noexcept(false)
 		{
 			terminate();
 		}
@@ -158,7 +158,7 @@ namespace kstd
 			ExAcquireFastMutex(m_mutex);
 		}
 
-		bool try_lock()
+		bool tryLock()
 		{
 			return ExTryToAcquireFastMutex(m_mutex);
 		}
@@ -215,7 +215,7 @@ namespace kstd
 			KeAcquireGuardedMutex(m_GuardedMutex);
 		}
 
-		bool try_lock() noexcept
+		bool tryLock() noexcept
 		{
 			return (KeTryToAcquireGuardedMutex(m_GuardedMutex) != FALSE ? true : false);
 		}
@@ -274,7 +274,7 @@ namespace kstd
 			::ExAcquireResourceExclusiveLite(m_mutex, TRUE);
 		}
 
-		bool try_lock() noexcept
+		bool tryLock() noexcept
 		{
 			return static_cast<bool>(
 				::ExAcquireResourceExclusiveLite(m_mutex, FALSE)
@@ -324,7 +324,9 @@ namespace kstd
 				);
 
 			if (!m_mutex)
-				::terminate();
+			{
+				return;
+			}
 
 			::KeInitializeSpinLock(m_mutex);
 		}
@@ -346,7 +348,7 @@ namespace kstd
 			KeAcquireSpinLock(m_mutex, &m_irql);
 		}
 
-		constexpr bool try_lock() noexcept(false)
+		constexpr bool tryLock() noexcept(false)
 		{
 			throw std::runtime_error("method try_lock() for a spinlock mutex is not implemented");
 		}
@@ -366,11 +368,79 @@ namespace kstd
 		PKSPIN_LOCK m_mutex;
 	};
 
+	template <ULONG PoolTag>
+	class mutex<LockStrategy::InStackQueueSpinLock, PoolTag>
+	{
+	public:
+		using native_handle_type = PKSPIN_LOCK;
+
+		mutex() noexcept(false)
+		{
+			m_mutex = static_cast<PKSPIN_LOCK>(
+				::ExAllocatePoolWithTag(mutex_pool_type, sizeof(KSPIN_LOCK), PoolTag)
+				);
+
+			m_hLock = reinterpret_cast<PKLOCK_QUEUE_HANDLE>(
+				::ExAllocatePoolWithTag(mutex_pool_type, sizeof(KLOCK_QUEUE_HANDLE), PoolTag)
+				);
+
+			if (!m_mutex || !m_hLock)
+			{
+				::terminate();
+			}
+
+			::KeInitializeSpinLock(m_mutex);
+		}
+
+		~mutex()
+		{
+			if (m_mutex)
+			{
+				::ExFreePoolWithTag(m_mutex, PoolTag);
+				m_mutex = nullptr;
+			}
+			
+			if (m_hLock)
+			{
+				::ExFreePoolWithTag(m_hLock, PoolTag);
+				m_hLock = nullptr;
+			}
+		}
+
+		mutex(const mutex&) = delete;
+		mutex operator=(const mutex&) = delete;
+
+		void lock() noexcept
+		{
+			KeAcquireInStackQueuedSpinLock(m_mutex, m_hLock);
+		}
+
+		constexpr bool tryLock() noexcept(false)
+		{
+			throw std::runtime_error("method try_lock() for a InStackQueueSpinLock mutex is not implemented");
+		}
+
+		void unlock() noexcept
+		{
+			::KeReleaseInStackQueuedSpinLock(m_hLock);
+		}
+
+		native_handle_type native_handle() noexcept
+		{
+			return m_mutex;
+		}
+
+	private:
+		PKLOCK_QUEUE_HANDLE	m_hLock;
+		PKSPIN_LOCK			m_mutex;
+	};
+
 	// type alias
-	using fast_mutex		= mutex<LockStrategy::FastMutex>;
-	using spinlock_mutex	= mutex<LockStrategy::SpinLock>;
-	using guarded_mutex		= mutex<LockStrategy::GuardedMutex>;
-	using resource_mutex	= mutex<LockStrategy::ResourceLock>;
+	using fast_mutex					= mutex<LockStrategy::FastMutex>;
+	using guarded_mutex					= mutex<LockStrategy::GuardedMutex>;
+	using resource_mutex				= mutex<LockStrategy::ResourceLock>;
+	using spinlock_mutex				= mutex<LockStrategy::SpinLock>;
+	using InStackQueueSpinLock_mutex	= mutex<LockStrategy::InStackQueueSpinLock>;
 
 
 	// openedr(https://github.com/ComodoSecurity/openedr)

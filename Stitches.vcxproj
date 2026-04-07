@@ -60,13 +60,13 @@
     <DriverType>WDM</DriverType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <TargetVersion>Windows7</TargetVersion>
+    <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
     <DriverType>WDM</DriverType>
     <DriverTargetPlatform>Desktop</DriverTargetPlatform>
-    <_NT_TARGET_VERSION>0x0601</_NT_TARGET_VERSION>
+    <_NT_TARGET_VERSION>0xA000008</_NT_TARGET_VERSION>
     <Driver_SpectreMitigation>false</Driver_SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -202,9 +202,6 @@
     <ClCompile Include="ProcessProtectorEx.cpp" />
     <ClCompile Include="RegistryProtector.cpp" />
     <ClCompile Include="Utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Inf Include="Stitches.inf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

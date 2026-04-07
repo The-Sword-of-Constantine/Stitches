@@ -31,7 +31,7 @@ ProcessCtx::AddProcessContext(
 	IN OUT OPTIONAL		PPS_CREATE_NOTIFY_INFO CreateInfo)
 {
 	//ExAcquireFastMutex(&g_pGlobalData->ProcessCtxFastMutex);
-	kstd::UniqueLock<kstd::fast_mutex> _lock(g_pGlobalData->ProcessCtxFastMutex);
+	//kstd::UniqueLock<kstd::fast_mutex> _lock(g_pGlobalData->ProcessCtxFastMutex);
 	ProcessContext* pProcessCtx = reinterpret_cast<ProcessContext*>(ExAllocateFromNPagedLookasideList(&g_pGlobalData->ProcessCtxNPList));
 	if (!pProcessCtx)
 	{
@@ -123,6 +123,7 @@ ProcessCtx::AddProcessContext(
 			break;
 		}
 
+		kstd::UniqueLock<kstd::spinlock_mutex> _lock( g_pGlobalData->ProcessCtxSpinLock );
 		InsertHeadList(&g_pGlobalData->ProcessCtxList, &pProcessCtx->ListHeader);
 
 		//ExReleaseFastMutex(&g_pGlobalData->ProcessCtxFastMutex);
@@ -148,7 +149,7 @@ VOID
 ProcessCtx::DeleteProcessCtxByPid(IN CONST HANDLE ProcessId)
 {
 	//ExAcquireFastMutex(&g_pGlobalData->ProcessCtxFastMutex);
-	kstd::UniqueLock<kstd::fast_mutex> _lock(g_pGlobalData->ProcessCtxFastMutex);
+	
 	if (!ProcessId || IsListEmpty(&g_pGlobalData->ProcessCtxList))
 	{
 		//ExReleaseFastMutex(&g_pGlobalData->ProcessCtxFastMutex);
@@ -176,6 +177,7 @@ ProcessCtx::DeleteProcessCtxByPid(IN CONST HANDLE ProcessId)
 					pNode->ProcessCmdLine.Buffer = nullptr;
 				}
 
+				kstd::UniqueLock<kstd::spinlock_mutex> _lock(g_pGlobalData->ProcessCtxSpinLock);
 				RemoveEntryList(&pNode->ListHeader);				
 
 				ExFreeToNPagedLookasideList(&g_pGlobalData->ProcessCtxNPList, pNode);
@@ -195,7 +197,7 @@ ProcessContext*
 ProcessCtx::FindProcessCtxByPid(IN CONST HANDLE Pid)
 {
 	//ExAcquireFastMutex(&g_pGlobalData->ProcessCtxFastMutex);
-	kstd::UniqueLock<kstd::fast_mutex> _lock(g_pGlobalData->ProcessCtxFastMutex);
+	kstd::UniqueLock<kstd::spinlock_mutex> _lock(g_pGlobalData->ProcessCtxSpinLock);
 	if (!Pid || IsListEmpty(&g_pGlobalData->ProcessCtxList))
 	{
 		//ExReleaseFastMutex(&g_pGlobalData->ProcessCtxFastMutex);
@@ -227,7 +229,7 @@ VOID
 ProcessCtx::CleanupProcessCtxList()
 {
 	//ExAcquireFastMutex(&g_pGlobalData->ProcessCtxFastMutex);
-	kstd::UniqueLock<kstd::fast_mutex> _lock(g_pGlobalData->ProcessCtxFastMutex);
+	
 	while (!IsListEmpty(&g_pGlobalData->ProcessCtxList))
 	{
 		PLIST_ENTRY pEntry = g_pGlobalData->ProcessCtxList.Flink;
@@ -247,6 +249,7 @@ ProcessCtx::CleanupProcessCtxList()
 				pNode->ProcessCmdLine.Buffer = nullptr;
 			}
 
+			kstd::UniqueLock<kstd::spinlock_mutex> _lock(g_pGlobalData->ProcessCtxSpinLock);
 			RemoveEntryList(&pNode->ListHeader);		
 
 			ExFreeToNPagedLookasideList(&g_pGlobalData->ProcessCtxNPList, pNode);
