@@ -148,7 +148,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/integritycheck %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>fltmgr.lib;fwpkclnt.lib;NetIO.lib;ndis.lib;ksecdd.lib;WDMSec.lib;UUID.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>fltmgr.lib;Wdmsec.lib;fwpkclnt.lib;NetIO.lib;ndis.lib;ksecdd.lib;WDMSec.lib;UUID.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -158,7 +158,7 @@
       <AdditionalIncludeDirectories>..\Common\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>fltmgr.lib;ksecdd.lib;WDMSec.lib;UUID.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>fltmgr.lib;Wdmsec.lib;ksecdd.lib;WDMSec.lib;UUID.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

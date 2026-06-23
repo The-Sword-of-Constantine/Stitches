@@ -4,6 +4,7 @@
 #include "CRules.hpp"
 #include "Log.hpp"
 #include "Lazy.hpp"
+#include <wdmsec.h>
 
 extern LazyInstance<GlobalData> g_pGlobalData;
 
@@ -23,13 +24,15 @@ DeviceControl::InitializeIoctlDevice(
 
 	__try
 	{
-		status = IoCreateDevice(g_pGlobalData->pDriverObject,
-								0, 
-								DeviceName,
-								FILE_DEVICE_KERNELCODE, 
-								FILE_DEVICE_SECURE_OPEN,
-								FALSE, 
-								&g_pGlobalData->pDeviceObject);
+		status = IoCreateDeviceSecure(g_pGlobalData->pDriverObject,
+									  0, 
+									  DeviceName,
+									  FILE_DEVICE_KERNELCODE, 
+									  FILE_DEVICE_SECURE_OPEN,
+									  FALSE, 
+									  &SDDL_DEVOBJ_SYS_ALL_ADM_RWX_WORLD_RW_RES_R,
+									  NULL,
+									  &g_pGlobalData->pDeviceObject);
 		if (NT_SUCCESS(status))
 		{
 			status = IoCreateSymbolicLink(SymbolicLinkName, DeviceName);
